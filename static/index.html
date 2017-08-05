@@ -1,0 +1,223 @@
+<html>
+<head>
+<title>Canvas Test</title>
+<style>
+body { background-color:silver; } 
+</style>
+<body>
+
+<canvas id="myCanvas" width="500" height="300" style="border:1px solid gray;"></canvas><br>
+<input type="range" id="slider-hip"   data-facing="profile" data-side="left" data-joint="hip" value="90" min="-120" max="20"><br>
+<input type="range" id="slider-knee"  data-facing="profile" data-side="left" data-joint="knee" value="90" min="-10" max="120"><br>
+<input type="range" id="slider-ankle" data-facing="profile" data-side="left" data-joint="ankle" value="90" min="-20" max="80">
+
+<pre id="textarea">xyz</pre>
+<script>
+const cfg = {
+    profile: {
+        left: {
+            hip: {
+                arc: {
+                    min: -120, // positive numers = clockwise (robot diag facing right)
+                    max: 20,
+                    dia: 5,
+                    colour: 'blue',
+                    visible: true
+                },
+                point: {
+                    x: 200,
+                    y: 150,
+                    heading: 180,
+                    dia: 3,
+                    colour: 'red'
+                }
+            },
+            knee: {
+                arc: {
+                    min: -10,
+                    max: 120,
+                    direction: 1, // 1 is counter clk
+                    dia: 5,
+                    colour: 'blue',
+                    visible: true
+                },
+                point: {
+                    heading: 0,
+                    dia: 3,
+                    colour: 'blue'
+                }
+            },
+            ankle: {
+                arc: {
+                    min: -20,
+                    max: 80,
+                    direction: 0, // 0 is counter clk
+                    dia: 5,
+                    colour: 'blue',
+                    visible: true
+                },
+                point: {
+                    heading: 270,
+                    dia: 3,
+                    colour: 'green'
+                }
+            },
+            thigh: {
+                length: 50,
+                colour: 'black'
+            },
+            shin: {
+                length: 50,
+                colour: 'black'
+            },
+            foot: {
+                length: 20,
+                colour: 'black'
+            }
+        },
+        right: { }
+    },
+    front: {
+        anchorPoint: {
+            x: 200,
+            y: 50,
+            width: 30
+        }
+    }
+}
+
+var leg = {
+    profile: {
+        left: {
+            hip: {
+                angle: -10,
+                heading: null,
+                x: null,
+                y: null
+            },
+            knee: {
+                angle: 20,
+                heading: null,
+                x: null,
+                y: null
+            },
+            ankle: {
+                angle: -10,
+                heading: null,
+                x: null,
+                y: null
+            },
+            toes: {
+                x: null,
+                y: null
+            }
+        },
+        right: { }
+    },
+    front: { }
+}
+
+function calcLegPosition(leg,cfg){
+    // Calc hip plot
+    leg.hip.x = cfg.hip.point.x;
+    leg.hip.y = cfg.hip.point.y;
+    leg.hip.heading = (cfg.hip.point.heading + leg.hip.angle) % 360;
+    
+    // Calc knee plot (current pos + x/y from angle/distance (NB: cos/sin need angle in radians)
+    leg.knee.x = leg.hip.x + Math.round( Math.sin(leg.hip.heading * (Math.PI / 180)) * cfg.thigh.length );
+    leg.knee.y = leg.hip.y - Math.round( Math.cos(leg.hip.heading * (Math.PI / 180)) * cfg.thigh.length );
+    leg.knee.heading = (leg.hip.heading + leg.knee.angle + cfg.knee.point.heading) % 360
+
+    // Calc ankle plot
+    leg.ankle.x = leg.knee.x + Math.round( Math.sin(leg.knee.heading * (Math.PI / 180)) * cfg.shin.length );
+    leg.ankle.y = leg.knee.y - Math.round( Math.cos(leg.knee.heading * (Math.PI / 180)) * cfg.shin.length );
+    leg.ankle.heading = (leg.knee.heading + leg.ankle.angle + cfg.ankle.point.heading) % 360
+
+    // Calc toes plot
+    leg.toes.x = leg.ankle.x + Math.round( Math.sin(leg.ankle.heading * (Math.PI / 180)) * cfg.foot.length );
+    leg.toes.y = leg.ankle.y - Math.round( Math.cos(leg.ankle.heading * (Math.PI / 180)) * cfg.foot.length );
+    
+    //To do - front view
+    
+    document.getElementById("textarea").innerText = JSON.stringify(leg, undefined, 2);
+}
+
+function plotLeg(leg, cfg, ctx, canvas){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    plotJoint( leg.hip,   cfg.hip.point,   ctx );
+    plotJoint( leg.knee,  cfg.knee.point,  ctx );
+    plotJoint( leg.ankle, cfg.ankle.point, ctx );
+
+    plotLimb( leg.hip,   leg.knee,  cfg.thigh, ctx ); 
+    plotLimb( leg.knee,  leg.ankle, cfg.shin,  ctx ); 
+    plotLimb( leg.ankle, leg.toes,  cfg.foot,  ctx ); 
+}
+
+function plotJoint(joint, point, ctx){
+    ctx.strokeStyle = point.colour
+    ctx.beginPath();
+    ctx.arc( joint.x, joint.y, point.dia, 0, 2*Math.PI );
+    ctx.stroke();
+}
+
+function plotLimb(joint1, joint2, limb, ctx){
+    ctx.strokeStyle = limb.colour
+    ctx.beginPath();
+    ctx.moveTo(joint1.x, joint1.y);
+    ctx.lineTo(joint2.x, joint2.y);
+    ctx.stroke();
+}
+
+function test(){
+    if(count > 90) direction = -1;
+    if(count < 1 ) direction =  1;
+
+    leg.profile.left.hip.angle += -direction;
+    leg.profile.left.knee.angle += direction;
+    //leg.profile.left.ankle.angle += direction;
+
+    count += direction;
+
+    calcLegPosition(leg.profile.left, cfg.profile.left);
+    plotLeg(leg.profile.left, cfg.profile.left, ctx, canvas);
+}
+
+var canvas = document.getElementById("myCanvas");
+var ctx = canvas.getContext("2d");
+
+calcLegPosition(leg.profile.left, cfg.profile.left);
+plotLeg(leg.profile.left, cfg.profile.left, ctx, canvas);
+
+
+var ctrl = {
+    hip: document.getElementById("slider-hip"),
+    knee: document.getElementById("slider-knee"),
+    ankle: document.getElementById("slider-ankle")
+}
+
+ctrl.hip.addEventListener("input",  slideControl);
+ctrl.knee.addEventListener("input", slideControl);
+ctrl.ankle.addEventListener("input",slideControl);
+
+function slideControl(event){
+    var newAngle = parseInt(this.value); // value is a string by default
+    
+    leg[this.dataset.facing][this.dataset.side][this.dataset.joint].angle = newAngle;
+    
+    calcLegPosition(leg.profile.left, cfg.profile.left);
+    plotLeg(leg.profile.left, cfg.profile.left, ctx, canvas);    
+    // document.getElementById("textarea").innerText = JSON.stringify(this.dataset, undefined, 2)
+}
+
+/*
+var count = 0;
+var direction = 1;
+setInterval(test,20);
+*/
+</script> 
+
+
+</body>
+</html>
+
