@@ -1,0 +1,12 @@
+var cx = 100; var cy =100; // in case you like using degrees function toRadians(deg) {
+    return deg * Math.PI / 180
+}
+ctx.fillStyle = 'lightblue' ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,30,toRadians(180),toRadians(250)); ctx.lineTo(cx,cy); 
+ctx.closePath(); ctx.fill(); function getPoint(x,y,radius,angle){
+    return {
+        x: x+Math.cos(toRadians(angle))*radius,
+        y: y+Math.sin(toRadians(angle))*radius
+    }
+};
+var start = getPoint(cx,cy,30,180); var end = getPoint(cx,cy,30,250); ctx.beginPath(); ctx.strokeStyle = 'red' ctx.moveTo(start.x, 
+start.y); ctx.lineTo(cx, cy); ctx.lineTo(end.x, end.y); ctx.stroke();

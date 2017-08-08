@@ -1,0 +1,38 @@
+<html>
+<head>
+<title>Canvas Test</title>
+<style>
+body { background-color:silver; } 
+</style>
+<body>
+
+<canvas id="myCanvas" width="500" height="300" style="border:1px solid gray;"></canvas>
+
+<script>
+
+function toRadians(angle) {
+  return angle * (Math.PI / 180);
+}
+
+var canvas = document.getElementById("myCanvas");
+var ctx = canvas.getContext("2d");
+
+var start = toRadians((0   - 90) % 360); // start angle is at 90 deg by default
+var end   = toRadians((135 - 90) % 360);
+
+ctx.strokeStyle = 'black';
+ctx.fillStyle = 'gray';
+ctx.beginPath();
+ctx.arc( 250, 150, 28, start, end, false );
+ctx.lineTo( 250, 150 );
+ctx.closePath();
+ctx.fill();
+ctx.stroke();
+
+
+</script> 
+
+
+</body>
+</html>
+

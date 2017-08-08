@@ -2,14 +2,14 @@
 <head>
 <title>Canvas Test</title>
 <style>
-body { background-color:silver; } 
+body { background-color:f3f3f3; } 
 </style>
 <body>
 
 <canvas id="myCanvas" width="500" height="300" style="border:1px solid gray;"></canvas><br>
-<input type="range" id="slider-hip"   data-facing="profile" data-side="left" data-joint="hip" value="90" min="-120" max="20"><br>
-<input type="range" id="slider-knee"  data-facing="profile" data-side="left" data-joint="knee" value="90" min="-10" max="120"><br>
-<input type="range" id="slider-ankle" data-facing="profile" data-side="left" data-joint="ankle" value="90" min="-20" max="80">
+<input type="range" id="slider-hip"   data-facing="profile" data-side="left" data-joint="hip" value="-10" min="-120" max="20"><br>
+<input type="range" id="slider-knee"  data-facing="profile" data-side="left" data-joint="knee" value="20" min="-10" max="120"><br>
+<input type="range" id="slider-ankle" data-facing="profile" data-side="left" data-joint="ankle" value="-10" min="-50" max="80">
 
 <pre id="textarea">xyz</pre>
 <script>
@@ -20,8 +20,9 @@ const cfg = {
                 arc: {
                     min: -120, // positive numers = clockwise (robot diag facing right)
                     max: 20,
-                    dia: 5,
-                    colour: 'blue',
+                    dia: 15,
+                    fillColour: '#d3d3d3',
+                    lineColour: '#e3e3e3',
                     visible: true
                 },
                 point: {
@@ -37,8 +38,9 @@ const cfg = {
                     min: -10,
                     max: 120,
                     direction: 1, // 1 is counter clk
-                    dia: 5,
-                    colour: 'blue',
+                    dia: 15,
+                    fillColour: '#d3d3d3',
+                    lineColour: '#999999',
                     visible: true
                 },
                 point: {
@@ -49,11 +51,12 @@ const cfg = {
             },
             ankle: {
                 arc: {
-                    min: -20,
+                    min: -50,
                     max: 80,
                     direction: 0, // 0 is counter clk
-                    dia: 5,
-                    colour: 'blue',
+                    dia: 15,
+                    fillColour: '#d3d3d3',
+                    lineColour: '#a3a3a3',
                     visible: true
                 },
                 point: {
@@ -145,13 +148,38 @@ function calcLegPosition(leg,cfg){
 function plotLeg(leg, cfg, ctx, canvas){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    plotArc(leg.hip, cfg.hip, ctx)
+    plotArc(leg.knee, cfg.knee, ctx)
+    plotArc(leg.ankle, cfg.ankle, ctx)
+
     plotJoint( leg.hip,   cfg.hip.point,   ctx );
     plotJoint( leg.knee,  cfg.knee.point,  ctx );
     plotJoint( leg.ankle, cfg.ankle.point, ctx );
 
     plotLimb( leg.hip,   leg.knee,  cfg.thigh, ctx ); 
     plotLimb( leg.knee,  leg.ankle, cfg.shin,  ctx ); 
-    plotLimb( leg.ankle, leg.toes,  cfg.foot,  ctx ); 
+    plotLimb( leg.ankle, leg.toes,  cfg.foot,  ctx );
+}
+
+
+function plotArc(joint, cfg, ctx){
+    var startAngle = toRadians((joint.heading + (cfg.arc.min - joint.angle) - 90) % 360); // start angle is at 90 deg by default
+    var endAngle   = toRadians((joint.heading + (cfg.arc.max - joint.angle) - 90) % 360); // start angle is at 90 deg by default
+    ctx.fillStyle = cfg.arc.fillColour;
+    ctx.beginPath();
+    ctx.moveTo( joint.x, joint.y )
+    ctx.arc( joint.x, joint.y, cfg.arc.dia, startAngle, endAngle, false );
+    ctx.closePath();
+    ctx.fill();
+
+    var startPoint = getArcPoint(joint.x, joint.y, cfg.arc.dia, startAngle);
+    var endPoint = getArcPoint(joint.x, joint.y, cfg.arc.dia, endAngle);
+    ctx.beginPath();
+    ctx.strokeStyle = cfg.arc.lineColour;
+    ctx.moveTo(startPoint.x, startPoint.y);
+    ctx.lineTo(joint.x, joint.y);
+    ctx.lineTo(endPoint.x, endPoint.y);
+    ctx.stroke();
 }
 
 function plotJoint(joint, point, ctx){
@@ -169,18 +197,15 @@ function plotLimb(joint1, joint2, limb, ctx){
     ctx.stroke();
 }
 
-function test(){
-    if(count > 90) direction = -1;
-    if(count < 1 ) direction =  1;
+function toRadians(angle) {
+  return angle * (Math.PI / 180);
+}
 
-    leg.profile.left.hip.angle += -direction;
-    leg.profile.left.knee.angle += direction;
-    //leg.profile.left.ankle.angle += direction;
-
-    count += direction;
-
-    calcLegPosition(leg.profile.left, cfg.profile.left);
-    plotLeg(leg.profile.left, cfg.profile.left, ctx, canvas);
+function getArcPoint(x,y,radius,angle){
+    return {
+        x: x+Math.cos(angle)*radius, // NB: Radians
+        y: y+Math.sin(angle)*radius
+    }
 }
 
 var canvas = document.getElementById("myCanvas");
@@ -188,6 +213,8 @@ var ctx = canvas.getContext("2d");
 
 calcLegPosition(leg.profile.left, cfg.profile.left);
 plotLeg(leg.profile.left, cfg.profile.left, ctx, canvas);
+
+
 
 
 var ctrl = {
@@ -210,11 +237,6 @@ function slideControl(event){
     // document.getElementById("textarea").innerText = JSON.stringify(this.dataset, undefined, 2)
 }
 
-/*
-var count = 0;
-var direction = 1;
-setInterval(test,20);
-*/
 </script> 
 
 
